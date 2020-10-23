@@ -1,0 +1,170 @@
+[
+{
+    "model": "service_interactor.scope",
+    "pk": 2,
+    "fields": {
+        "name": "https://www.googleapis.com/auth/userinfo.profile",
+        "provider": "google",
+        "required": true,
+        "grants_access": false,
+        "calendar": false,
+        "files": false
+    }
+},
+{
+    "model": "service_interactor.scope",
+    "pk": 3,
+    "fields": {
+        "name": "https://www.googleapis.com/auth/userinfo.email",
+        "provider": "google",
+        "required": true,
+        "grants_access": false,
+        "calendar": false,
+        "files": false
+    }
+},
+{
+    "model": "service_interactor.scope",
+    "pk": 4,
+    "fields": {
+        "name": "https://www.googleapis.com/auth/plus.me",
+        "provider": "google",
+        "required": true,
+        "grants_access": false,
+        "calendar": false,
+        "files": false
+    }
+},
+{
+    "model": "service_interactor.scope",
+    "pk": 5,
+    "fields": {
+        "name": "https://www.googleapis.com/auth/calendar.events",
+        "provider": "google",
+        "required": false,
+        "grants_access": true,
+        "calendar": true,
+        "files": false
+    }
+},
+{
+    "model": "service_interactor.scope",
+    "pk": 6,
+    "fields": {
+        "name": "https://www.googleapis.com/auth/calendar.readonly",
+        "provider": "google",
+        "required": false,
+        "grants_access": false,
+        "calendar": true,
+        "files": false
+    }
+},
+{
+    "model": "service_interactor.scope",
+    "pk": 7,
+    "fields": {
+        "name": "https://www.googleapis.com/auth/drive",
+        "provider": "google",
+        "required": false,
+        "grants_access": true,
+        "calendar": false,
+        "files": true
+    }
+},
+{
+    "model": "service_interactor.scope",
+    "pk": 8,
+    "fields": {
+        "name": "Files.ReadWrite",
+        "provider": "microsoft",
+        "required": false,
+        "grants_access": true,
+        "calendar": false,
+        "files": true
+    }
+},
+{
+    "model": "service_interactor.scope",
+    "pk": 9,
+    "fields": {
+        "name": "Tasks.ReadWrite",
+        "provider": "microsoft",
+        "required": false,
+        "grants_access": false,
+        "calendar": false,
+        "files": true
+    }
+},
+{
+    "model": "service_interactor.scope",
+    "pk": 10,
+    "fields": {
+        "name": "User.Read",
+        "provider": "microsoft",
+        "required": true,
+        "grants_access": false,
+        "calendar": false,
+        "files": false
+    }
+},
+{
+    "model": "service_interactor.scope",
+    "pk": 11,
+    "fields": {
+        "name": "Calendars.ReadWrite",
+        "provider": "microsoft",
+        "required": false,
+        "grants_access": true,
+        "calendar": true,
+        "files": false
+    }
+},
+{
+    "model": "service_interactor.scope",
+    "pk": 12,
+    "fields": {
+        "name": "offline_access",
+        "provider": "microsoft",
+        "required": true,
+        "grants_access": false,
+        "calendar": false,
+        "files": false
+    }
+},
+{
+    "model": "service_interactor.scope",
+    "pk": 13,
+    "fields": {
+        "name": "openid",
+        "provider": "google",
+        "required": true,
+        "grants_access": false,
+        "calendar": false,
+        "files": false
+    }
+},
+{
+    "model": "service_interactor.scope",
+    "pk": 14,
+    "fields": {
+        "name": "email",
+        "provider": "google",
+        "required": true,
+        "grants_access": false,
+        "calendar": false,
+        "files": false
+    }
+},
+{
+    "model": "service_interactor.scope",
+    "pk": 15,
+    "fields": {
+        "name": "profile",
+        "provider": "google",
+        "required": true,
+        "grants_access": false,
+        "calendar": false,
+        "files": false
+    }
+}
+]
