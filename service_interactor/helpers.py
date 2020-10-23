@@ -1,6 +1,13 @@
 import base64
 import binascii
+import email
+import mimetypes
+import os
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
+from email.mime.audio import MIMEAudio
+from email.mime.base import MIMEBase
 
 from django.utils.functional import cached_property
 
@@ -15,11 +22,60 @@ class GmailMessage:
         self.id = message['id']
         self.threadId = message['threadId']
         self._attachments = []
+        self._body = None
 
     @classmethod
     def load(cls, service, message_id):
         message = service.users().messages().get(userId='me', id=message_id).execute()
         return cls(service, message)
+
+    @staticmethod
+    def send_new_message(service, to, subject, body, attachments=None, body_type='plain', _from=None):
+        message = MIMEMultipart()
+        message['to'] = to
+        message['subject'] = subject
+
+        if _from:
+            message['from'] = _from
+
+        msg = MIMEText(body, body_type)
+        message.attach(msg)
+
+        if not attachments:
+            attachments = []
+        if not isinstance(attachments, (list, tuple, set)):
+            attachments = [attachments]
+
+        for att in attachments:
+
+            content_type, encoding = mimetypes.guess_type(att)
+            if content_type is None or encoding is not None:
+                content_type = 'application/octet-stream'
+            main_type, sub_type = content_type.split('/', 1)
+
+            with open(att, 'rb') as fo:
+                if main_type == 'text':
+                    msg = MIMEText(fo.read(), _subtype=sub_type)
+                elif main_type == 'image':
+                    msg = MIMEImage(fo.read(), _subtype=sub_type)
+                elif main_type == 'audio':
+                    msg = MIMEAudio(fo.read(), _subtype=sub_type)
+                else:
+                    msg = MIMEBase(main_type, sub_type)
+                    msg.set_payload(fo.read())
+
+            if msg:
+                msg.add_header('Content-Disposition', 'attachment', filename=os.path.basename(att))
+                message.attach(msg)
+
+        msg_as_str = message.as_bytes()
+        data = {'raw': base64.urlsafe_b64encode(msg_as_str).decode()}
+        output = service.users().messages().send(userId='me', body=data).execute()
+        return output
+
+    def load_raw_message(self):
+        message = self.service.users().messages().get(userId='me', id=self.id, format='raw').execute()
+        return base64.urlsafe_b64decode(message['raw'].encode('utf-8'))
 
     @cached_property
     def account_email_address(self):
@@ -108,6 +164,9 @@ class GmailMessage:
 
         return self._attachments
 
+    def labels(self):
+        return self._message['labelIds']
+
     def label_manager(self, label_ids=None, remove_ids=None, remove_from_inbox=True, mark_as_read=False):
         """ Adds and Remove supplied label ID's
 
@@ -147,6 +206,9 @@ class GmailMessage:
         reply_message['to'] = self.from_email
         reply_message['from'] = self.account_email_address
         reply_message['subject'] = f"Re: {self.subject}"
+        if 'References' in self.headers:
+            reply_message['References'] = self.headers['References']
+        reply_message['In-Reply-To'] = self.headers['Message-ID']
         raw_message = base64.urlsafe_b64encode(reply_message.as_bytes()).decode('utf-8')
 
         return self.service.users().messages().send(userId='me', body={
