@@ -103,7 +103,9 @@ class GmailMessage:
         _from = self.headers['From']
         first_position = _from.find('<') + 1
         second_position = _from.rfind('>', first_position)
-        return _from[first_position:second_position]
+        if second_position:
+            return _from[first_position:second_position]
+        return _from[first_position:]
 
     def body(self, body_load_order=None):
         if not self._body:
