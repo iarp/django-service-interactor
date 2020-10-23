@@ -105,31 +105,14 @@ class GmailMessage:
         second_position = _from.rfind('>', first_position)
         return _from[first_position:second_position]
 
-    def body(self, fallback_to_snippet=True, encoding='utf-8'):
-        data = None
-        if self._message['payload']['mimeType'] in ['multipart/mixed', 'multipart/alternative', 'multipart/related']:
-            for part in self._message['payload']['parts']:
-                if 'parts' in part:
-                    for sub_part in part['parts']:
-                        if sub_part['mimeType'] in ['text/plain']:
-                            data = sub_part['body']['data']
-                            break
-                else:
-                    if part['mimeType'] in ['text/plain']:
-                        data = part['body']['data']
-                if data:
-                    break
-        else:
-            for part in self._message['payload']['parts']:
-                if part['mimeType'] in ['text/plain']:
-                    data = part['body']['data']
-                    break
-        try:
-            return base64.b64decode(data).decode(encoding).strip()
-        except binascii.Error:
-            if fallback_to_snippet:
-                return self._message['snippet']
-            raise
+    def body(self, body_load_order=None):
+        if not self._body:
+            raw_message = self.load_raw_message()
+            email_data = email.message_from_bytes(raw_message, policy=email.policy.default)
+            self._body = email_data.get_body(preferencelist=body_load_order or ('plain', 'html'))
+            if self._body:
+                self._body = self._body.get_content()
+        return self._body
 
     def attachments(self, encoding='utf-8'):
         if self._attachments:
