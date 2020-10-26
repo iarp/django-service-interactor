@@ -93,11 +93,11 @@ class ServiceProvider(object):
             )
 
     def get_calendar_access_granted_datetime(self):
-        for es in self.get_account_scopes(scope__calendar=True, scope__grants_access=True):
+        for es in self.get_account_scopes(scope__access_type='calendar', scope__grants_access=True):
             return es.inserted
 
     def get_files_access_granted_datetime(self):
-        for es in self.get_account_scopes(scope__files=True, scope__grants_access=True):
+        for es in self.get_account_scopes(scope__access_type='files', scope__grants_access=True):
             return es.inserted
 
     def get_email(self):
@@ -112,29 +112,41 @@ class ServiceProvider(object):
     @property
     def has_calendar_access(self):
         return self.provider_has_calendar_abilities and self.is_enabled and \
-               self.get_account_scopes().filter(scope__calendar=True, scope__grants_access=True).exists()
+               self.get_account_scopes().filter(scope__access_type='calendar', scope__grants_access=True).exists()
 
     @property
     def has_file_access(self):
         return self.provider_has_files_abilities and self.is_enabled and \
-               self.get_account_scopes().filter(scope__files=True, scope__grants_access=True).exists()
+               self.get_account_scopes().filter(scope__access_type='files', scope__grants_access=True).exists()
+
+    @property
+    def has_youtube_access(self):
+        return self.provider_has_youtube_abilities and self.is_enabled and \
+               self.get_account_scopes().filter(scope__access_type='youtube', scope__grants_access=True).exists()
 
     @property
     def provider_has_calendar_abilities(self):
-        return self.get_provider_scopes(calendar=True).exists()
+        return self.get_provider_scopes(access_type='calendar').exists()
 
     @property
     def provider_has_files_abilities(self):
-        return self.get_provider_scopes(files=True).exists()
+        return self.get_provider_scopes(access_type='files').exists()
+
+    @property
+    def provider_has_youtube_abilities(self):
+        return self.get_provider_scopes(access_type='youtube').exists()
 
     def get_current_access_scopes_url(self):
         return mark_safe(','.join(self.get_new_scopes()))
 
     def get_files_access_scopes_url(self):
-        return mark_safe(','.join(self.get_new_scopes(files=True)))
+        return mark_safe(','.join(self.get_new_scopes(access_type='files')))
 
     def get_calendar_access_scopes_url(self):
-        return mark_safe(','.join(self.get_new_scopes(calendar=True)))
+        return mark_safe(','.join(self.get_new_scopes(access_type='calendar')))
+
+    def get_youtube_access_scopes_url(self):
+        return mark_safe(','.join(self.get_new_scopes(access_type='youtube')))
 
     def get_files(self, **kwargs):
         raise NotImplementedError

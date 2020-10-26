@@ -16,8 +16,7 @@ class Scope(models.Model):
     required = models.BooleanField(default=False)
 
     grants_access = models.BooleanField(default=False)
-    calendar = models.BooleanField(default=False)
-    files = models.BooleanField(default=False)
+    access_type = models.CharField(max_length=255, default='default')
 
     def __str__(self):
         return f'{self.provider}: {self.name}'

@@ -67,9 +67,9 @@ def copy_default_scopes(request, sociallogin, **kwargs):
 
         if created:
             message = None
-            if scope.calendar and scope.grants_access:
+            if scope.access_type == 'calendar' and scope.grants_access:
                 message = 'Calendar'
-            elif scope.files and scope.grants_access:
+            elif scope.access_type == 'files' and scope.grants_access:
                 message = 'Files'
             if message:
                 messages.success(request, f'Successfully granted access to {message}')

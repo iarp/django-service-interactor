@@ -40,6 +40,10 @@ class GoogleServiceProvider(ServiceProvider):
     def gmail_service(self):
         return self.resource(service_name='gmail', version='v1')
 
+    @cached_property
+    def youtube_service(self):
+        return self.resource(service_name='youtube', version='v3')
+
     def get_files(self, **kwargs):
         """ Obtain all of the users Drive files. Yields results as it queries data.
 
