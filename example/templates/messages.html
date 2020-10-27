@@ -1,0 +1,10 @@
+
+<div id="site-messages">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' or message.tags == 'critical' %}danger{% else %}{{ message.tags }}{% endif %}">
+                <strong>{{ message|safe }}</strong>
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>
