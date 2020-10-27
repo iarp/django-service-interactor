@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
 
     'service_interactor',
+    'demo',
 ]
 
 SITE_ID = 1
