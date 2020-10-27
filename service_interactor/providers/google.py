@@ -234,25 +234,39 @@ class YouTubeServiceProvider:
 
         self.service = service
 
-    def get_playlists(self, max_results=25, page_token=''):
+    def get_playlists(self, max_results=25, page_token='', mine=None, playlist_id=None, channel_id=None):
         # https://developers.google.com/youtube/v3/docs/playlists/list
+
+        vals = {
+            'part': 'snippet,contentDetails',
+            'maxResults': max_results,
+            'pageToken': page_token
+        }
+
+        if mine:
+            vals['mine'] = True
+        elif playlist_id:
+            vals['id'] = playlist_id
+        elif channel_id:
+            vals['channelId'] = channel_id
 
         while True:
 
-            data = self.service.playlists().list(
-                part="snippet,contentDetails",
-                mine=True,
-                maxResults=max_results,
-                pageToken=page_token,
-            ).execute()
+            data = self.service.playlists().list(**vals).execute()
 
-            page_token = data.get('nextPageToken')
+            vals['pageToken'] = data.get('nextPageToken')
 
             for item in data['items']:
                 yield item
 
-            if not page_token:
+            if not vals['pageToken']:
                 break
+
+    def get_playlist(self, playlist_id):
+        try:
+            return next(self.get_playlists(playlist_id=playlist_id))
+        except StopIteration:
+            pass
 
     def get_playlist_items(self, playlist_id, page_token=''):
         # https://developers.google.com/youtube/v3/docs/playlistItems/list
