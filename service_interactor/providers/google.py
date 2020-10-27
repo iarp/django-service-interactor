@@ -224,3 +224,119 @@ class GoogleServiceProvider(ServiceProvider):
             eventId=calendar_item.event_id,
         ).execute()
 
+
+class YouTubeServiceProvider:
+
+    def __init__(self, service: GoogleServiceProvider):
+
+        if isinstance(service, GoogleServiceProvider):
+            service = service.youtube_service
+
+        self.service = service
+
+    def get_playlists(self, max_results=25, page_token=''):
+        # https://developers.google.com/youtube/v3/docs/playlists/list
+
+        while True:
+
+            data = self.service.playlists().list(
+                part="snippet,contentDetails",
+                mine=True,
+                maxResults=max_results,
+                pageToken=page_token,
+            ).execute()
+
+            page_token = data.get('nextPageToken')
+
+            for item in data['items']:
+                yield item
+
+            if not page_token:
+                break
+
+    def get_playlist_items(self, playlist_id, page_token=''):
+        # https://developers.google.com/youtube/v3/docs/playlistItems/list
+
+        while True:
+
+            data = self.service.playlistItems().list(
+                part='snippet,contentDetails,status',
+                playlistId=playlist_id,
+                pageToken=page_token,
+            ).execute()
+
+            page_token = data.get('nextPageToken')
+
+            for item in data['items']:
+                yield item
+
+            if not page_token:
+                break
+
+    def create_playlist(self, title, description='', status='unlisted', tags=None):
+        # https://developers.google.com/youtube/v3/docs/playlists/insert
+        if not tags:
+            tags = []
+        return self.service.playlists().insert(
+            part='snippet,contentDetails,status',
+            body={
+                "snippet": {
+                    "title": title,
+                    "description": description,
+                    "tags": tags,
+                    "defaultLanguage": "en"
+                },
+                "status": {
+                    "privacyStatus": status
+                }
+            }
+        ).execute()
+
+    def create_playlist_item(self, playlist_id, video_id, position=0):
+        # https://developers.google.com/youtube/v3/docs/playlistItems/insert
+        return self.service.playlistItems().insert(
+            part="snippet",
+            body={
+                "snippet": {
+                    "playlistId": playlist_id,
+                    "position": position,
+                    "resourceId": {
+                        "kind": "youtube#video",
+                        "videoId": video_id
+                    }
+                }
+            }
+        ).execute()
+
+    def get_subscriptions(self, page_token=''):
+        # https://developers.google.com/youtube/v3/docs/subscriptions/list
+
+        while True:
+
+            data = self.service.subscriptions().list(
+                part='snippet,contentDetails,id,subscriberSnippet',
+                mine=True,
+                pageToken=page_token,
+            ).execute()
+
+            page_token = data.get('nextPageToken')
+
+            for item in data['items']:
+                yield item
+
+            if not page_token:
+                break
+
+    def add_subscription(self, channel_id):
+        # https://developers.google.com/youtube/v3/docs/subscriptions/insert
+        return self.service.subscriptions().insert(
+            part='contentDetails,id,snippet,subscriberSnippet',
+            body={
+                "snippet": {
+                    "resourceId": {
+                        "kind": "youtube#channel",
+                        "channelId": channel_id
+                    }
+                }
+            }
+        ).execute()
