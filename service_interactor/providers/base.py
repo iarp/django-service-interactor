@@ -125,6 +125,11 @@ class ServiceProvider(object):
                self.get_account_scopes().filter(scope__access_type='youtube', scope__grants_access=True).exists()
 
     @property
+    def has_email_access(self):
+        return self.provider_has_email_abilities and self.is_enabled and \
+               self.get_account_scopes().filter(scope__access_type='email', scope__grants_access=True).exists()
+
+    @property
     def provider_has_calendar_abilities(self):
         return self.get_provider_scopes(access_type='calendar').exists()
 
@@ -135,6 +140,10 @@ class ServiceProvider(object):
     @property
     def provider_has_youtube_abilities(self):
         return self.get_provider_scopes(access_type='youtube').exists()
+
+    @property
+    def provider_has_email_abilities(self):
+        return self.get_provider_scopes(access_type='email').exists()
 
     def get_current_access_scopes_url(self):
         return mark_safe(','.join(self.get_new_scopes()))
@@ -147,6 +156,9 @@ class ServiceProvider(object):
 
     def get_youtube_access_scopes_url(self):
         return mark_safe(','.join(self.get_new_scopes(access_type='youtube')))
+
+    def get_email_access_scopes_url(self):
+        return mark_safe(','.join(self.get_new_scopes(access_type='email')))
 
     def get_files(self, **kwargs):
         raise NotImplementedError
