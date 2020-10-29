@@ -73,7 +73,7 @@ class GmailMessage:
         output = service.users().messages().send(userId='me', body=data).execute()
         return output
 
-    def load_raw_message(self):
+    def get_raw_message(self):
         message = self.service.users().messages().get(userId='me', id=self.id, format='raw').execute()
         return base64.urlsafe_b64decode(message['raw'].encode('utf-8'))
 
@@ -109,7 +109,7 @@ class GmailMessage:
 
     def body(self, body_load_order=None):
         if not self._body:
-            raw_message = self.load_raw_message()
+            raw_message = self.get_raw_message()
             email_data = email.message_from_bytes(raw_message, policy=email.policy.default)
             self._body = email_data.get_body(preferencelist=body_load_order or ('plain', 'html'))
             if self._body:
@@ -200,3 +200,6 @@ class GmailMessage:
             'raw': raw_message,
             'threadId': self.threadId,
         }).execute()
+
+    def delete(self):
+        return self.service.users().messages().trash(userId='me', id=self._message['id']).execute()
