@@ -14,6 +14,49 @@ from django.utils.functional import cached_property
 from googleapiclient import errors
 
 
+class GmailHelper:
+
+    def __init__(self, service):
+        self.service = service
+        if hasattr(service, 'gmail_service'):
+            self.service = service.gmail_service
+
+    def messages(self, max_results=None, page_token=None, q=None, label_ids=None, include_spam_trash=None):
+        vals = {
+            'userId': 'me',
+        }
+        if max_results:
+            vals['maxResults'] = max_results
+        if page_token:
+            vals['pageToken'] = page_token
+        if q:
+            vals['q'] = q
+        if label_ids:
+            vals['labelIds'] = label_ids
+        if include_spam_trash is not None:
+            vals['includeSpamTrash'] = include_spam_trash
+
+        while True:
+
+            data = self.service.users().messages().list(**vals).execute()
+
+            vals['pageToken'] = data.get('nextPageToken')
+
+            for item in data['messages']:
+                yield item
+
+            if not vals['pageToken']:
+                break
+
+    def labels(self):
+        return self.service.users().labels().list(userId='me').execute()
+
+    def create_label(self, name):
+        return self.service.users().labels().create(userId='me', body={
+            'name': name
+        }).execute()
+
+
 class GmailMessage:
 
     def __init__(self, service, message):
@@ -26,6 +69,10 @@ class GmailMessage:
 
     @classmethod
     def load(cls, service, message_id):
+        if isinstance(message_id, dict):
+            message_id = message_id['id']
+        if hasattr(service, 'gmail_service'):
+            service = service.gmail_service
         message = service.users().messages().get(userId='me', id=message_id).execute()
         return cls(service, message)
 
