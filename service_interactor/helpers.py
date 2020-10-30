@@ -10,16 +10,23 @@ from email.mime.audio import MIMEAudio
 from email.mime.base import MIMEBase
 
 from django.utils.functional import cached_property
+from .providers.google import GoogleServiceProvider
 
 from googleapiclient import errors
+
+
+def _get_service_from_objs(service):
+    if isinstance(service, GoogleServiceProvider):
+        service = service.gmail_service
+    elif isinstance(service, GmailHelper):
+        service = service.service
+    return service
 
 
 class GmailHelper:
 
     def __init__(self, service):
-        self.service = service
-        if hasattr(service, 'gmail_service'):
-            self.service = service.gmail_service
+        self.service = _get_service_from_objs(service)
 
     def messages(self, max_results=None, page_token=None, q=None, label_ids=None, include_spam_trash=None):
         vals = {
@@ -56,6 +63,10 @@ class GmailHelper:
             'name': name
         }).execute()
 
+    def send_new_message(self, *args, **kwargs):
+        kwargs['service'] = self.service
+        return GmailMessage.send_new_message(*args, **kwargs)
+
 
 class GmailMessage:
 
@@ -69,15 +80,19 @@ class GmailMessage:
 
     @classmethod
     def load(cls, service, message_id):
+
         if isinstance(message_id, dict):
             message_id = message_id['id']
-        if hasattr(service, 'gmail_service'):
-            service = service.gmail_service
+
+        service = _get_service_from_objs(service)
+
         message = service.users().messages().get(userId='me', id=message_id).execute()
         return cls(service, message)
 
     @staticmethod
     def send_new_message(service, to, subject, body, attachments=None, body_type='plain', _from=None):
+        service = _get_service_from_objs(service)
+
         message = MIMEMultipart()
         message['to'] = to
         message['subject'] = subject
