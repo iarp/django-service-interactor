@@ -10,23 +10,23 @@ from email.mime.audio import MIMEAudio
 from email.mime.base import MIMEBase
 
 from django.utils.functional import cached_property
-from .providers.google import GoogleServiceProvider
 
 from googleapiclient import errors
 
 
-def _get_service_from_objs(service):
-    if isinstance(service, GoogleServiceProvider):
-        service = service.gmail_service
-    elif isinstance(service, GmailHelper):
-        service = service.service
-    return service
+def _get_service_from_objs(service, _type):
+
+    val = getattr(service, f'{_type}_service', None)
+    if val:
+        return val
+
+    return service.service
 
 
 class GmailHelper:
 
     def __init__(self, service):
-        self.service = _get_service_from_objs(service)
+        self.service = _get_service_from_objs(service, 'gmail')
 
     def messages(self, max_results=None, page_token=None, q=None, label_ids=None, include_spam_trash=None):
         vals = {
@@ -84,14 +84,14 @@ class GmailMessage:
         if isinstance(message_id, dict):
             message_id = message_id['id']
 
-        service = _get_service_from_objs(service)
+        service = _get_service_from_objs(service, 'gmail')
 
         message = service.users().messages().get(userId='me', id=message_id).execute()
         return cls(service, message)
 
     @staticmethod
     def send_new_message(service, to, subject, body, attachments=None, body_type='plain', _from=None):
-        service = _get_service_from_objs(service)
+        service = _get_service_from_objs(service, 'gmail')
 
         message = MIMEMultipart()
         message['to'] = to
@@ -265,3 +265,255 @@ class GmailMessage:
 
     def delete(self):
         return self.service.users().messages().trash(userId='me', id=self._message['id']).execute()
+
+
+class Playlist:
+
+    part = 'snippet,contentDetails,status'
+
+    def __init__(self, service, title, description=None, status='unlisted', playlist_id=None, playlist_data=None):
+        self.service = service
+        self.id = playlist_id
+        self.data = playlist_data
+
+        self.title = title
+        self.description = description
+        self.status = status
+
+    def __str__(self):
+        return f'<Playlist: {self.title}>'
+
+    def __getitem__(self, item):
+        return self.data[item]
+
+    @classmethod
+    def load_from_response(cls, service, data):
+        assert data['kind'] == 'youtube#playlist'
+        return cls(
+            service=service,
+            title=data['snippet']['title'],
+            description=data['snippet']['description'],
+            status=data['status']['privacyStatus'],
+            playlist_id=data['id'],
+            playlist_data=data
+        )
+
+    def videos(self, page_token=''):
+        while True:
+
+            data = self.service.playlistItems().list(
+                part='snippet,contentDetails,status',
+                playlistId=self.id,
+                pageToken=page_token,
+            ).execute()
+
+            page_token = data.get('nextPageToken')
+
+            for item in data['items']:
+                yield PlaylistItem.load_from_response(self.service, item)
+
+            if not page_token:
+                break
+
+    def new_video(self, video_id, **kwargs):
+        pi = PlaylistItem(
+            service=self.service,
+            video_id=video_id,
+            playlist_id=self.id,
+            **kwargs
+        )
+        pi.save()
+        return pi
+
+    def save(self):
+        if self.id:
+            return self.update()
+        return self.insert()
+
+    def insert(self):
+        body = {
+            "snippet": {
+                "title": self.title,
+                "description": self.description,
+                "defaultLanguage": "en"
+            },
+            "status": {
+                "privacyStatus": self.status
+            }
+        }
+        data = self.service.playlists().insert(part=self.part, body=body).execute()
+        return Playlist.load_from_response(self.service, data)
+
+    def update(self):
+        self.data = self.service.playlists().update(
+            part=self.part,
+            body={
+                "id": self.id,
+                "snippet": {
+                    "title": self.title,
+                    "description": self.description,
+                },
+                "status": {
+                    "privacyStatus": self.status
+                }
+            }
+        ).execute()
+        return self
+
+    def delete(self):
+        return self.service.playlists().delete(id=self.id).execute()
+
+
+class PlaylistItem:
+
+    part = 'contentDetails,id,snippet,status'
+
+    def __init__(self, service, title=None, description=None, status=None, video_id=None, position=0,
+                 playlist_id=None, playlist_item_id=None, playlist_item_data=None):
+        self.service = service
+        self.title = title
+        self.description = description
+        self.status = status
+        self.video_id = video_id
+
+        self.id = playlist_item_id
+        self.data = playlist_item_data
+        self.playlist_id = playlist_id
+        self.position = position
+
+    def __str__(self):
+        return f'<PlaylistItem: {self.video_id} {self.title}>'
+
+    def __getitem__(self, item):
+        return self.data[item]
+
+    @classmethod
+    def load_from_response(cls, service, data):
+        assert data['kind'] == 'youtube#playlistItem'
+        return cls(
+            service=service,
+            title=data['snippet']['title'],
+            description=data['snippet']['description'],
+            status=data['status']['privacyStatus'],
+            video_id=data['contentDetails']['videoId'],
+            playlist_id=data['snippet']['playlistId'],
+            position=data['snippet']['position'],
+            playlist_item_id=data['id'],
+            playlist_item_data=data
+        )
+
+    def save(self):
+        if self.id:
+            return self.update()
+        return self.insert()
+
+    def insert(self):
+        # https://developers.google.com/youtube/v3/docs/playlistItems/insert
+        data = self.service.playlistItems().insert(
+            part=self.part,
+            body={
+                "snippet": {
+                    "playlistId": self.playlist_id,
+                    "position": self.position,
+                    "resourceId": {
+                        "kind": "youtube#video",
+                        "videoId": self.video_id
+                    }
+                }
+            }
+        ).execute()
+        return PlaylistItem.load_from_response(self.service, data)
+
+    def update(self):
+        # https://developers.google.com/youtube/v3/docs/playlistItems/update
+        return self.service.playlistItems().update(
+            part=self.part,
+            body={
+                "id": self.id,
+                "snippet": {
+                    "playlistId": self.playlist_id,
+                    "position": self.position,
+                    "resourceId": {
+                        "kind": "youtube#video",
+                        "videoId": self.video_id
+                    }
+                }
+            }
+        ).execute()
+
+    def delete(self):
+        # https://developers.google.com/youtube/v3/docs/playlistItems/delete
+        return self.service.playlistItems().delete(id=self.id).execute()
+
+
+class YouTubeHelper:
+
+    def __init__(self, service):
+        self.service = _get_service_from_objs(service, 'youtube')
+
+    def playlists(self, max_results=25, page_token='', playlist_id=None, channel_id=None):
+        # https://developers.google.com/youtube/v3/docs/playlists/list
+
+        vals = {
+            'part': 'snippet,contentDetails,player,status',
+            'maxResults': max_results,
+            'pageToken': page_token
+        }
+
+        if playlist_id:
+            vals['id'] = playlist_id
+        elif channel_id:
+            vals['channelId'] = channel_id
+        else:
+            vals['mine'] = True
+
+        while True:
+
+            data = self.service.playlists().list(**vals).execute()
+
+            vals['pageToken'] = data.get('nextPageToken')
+
+            for item in data['items']:
+                playlist = Playlist.load_from_response(self.service, item)
+                if playlist_id:
+                    return playlist
+                yield playlist
+
+            if not vals['pageToken']:
+                break
+
+    def new_playlist(self, title, **kwargs):
+        return Playlist(service=self.service, title=title, **kwargs).insert()
+
+    def subscriptions(self, page_token=''):
+        # https://developers.google.com/youtube/v3/docs/subscriptions/list
+
+        while True:
+
+            data = self.service.subscriptions().list(
+                part='snippet,contentDetails,id,subscriberSnippet',
+                mine=True,
+                pageToken=page_token,
+            ).execute()
+
+            page_token = data.get('nextPageToken')
+
+            for item in data['items']:
+                yield item
+
+            if not page_token:
+                break
+
+    def new_subscription(self, channel_id):
+        # https://developers.google.com/youtube/v3/docs/subscriptions/insert
+        return self.service.subscriptions().insert(
+            part='contentDetails,id,snippet,subscriberSnippet',
+            body={
+                "snippet": {
+                    "resourceId": {
+                        "kind": "youtube#channel",
+                        "channelId": channel_id
+                    }
+                }
+            }
+        ).execute()
