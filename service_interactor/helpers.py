@@ -16,11 +16,13 @@ from googleapiclient import errors
 
 def _get_service_from_objs(service, _type):
 
-    val = getattr(service, f'{_type}_service', None)
-    if val:
-        return val
+    for x in [f'{_type}_service', 'service']:
+        try:
+            return getattr(service, x)
+        except AttributeError:
+            pass
 
-    return service.service
+    return service
 
 
 class GmailHelper:
@@ -50,7 +52,7 @@ class GmailHelper:
             vals['pageToken'] = data.get('nextPageToken')
 
             for item in data['messages']:
-                yield item
+                yield GmailMessage.load(self.service, item['id'])
 
             if not vals['pageToken']:
                 break
