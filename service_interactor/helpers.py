@@ -454,7 +454,7 @@ class YouTubeHelper:
     def __init__(self, service):
         self.service = _get_service_from_objs(service, 'youtube')
 
-    def playlists(self, max_results=25, page_token='', playlist_id=None, channel_id=None):
+    def playlists(self, playlist_id=None, max_results=25, page_token='', channel_id=None):
         # https://developers.google.com/youtube/v3/docs/playlists/list
 
         vals = {
@@ -477,13 +477,16 @@ class YouTubeHelper:
             vals['pageToken'] = data.get('nextPageToken')
 
             for item in data['items']:
-                playlist = YouTubePlaylist.load_from_response(self.service, item)
-                if playlist_id:
-                    return playlist
-                yield playlist
+                yield YouTubePlaylist.load_from_response(self.service, item)
 
             if not vals['pageToken']:
                 break
+
+    def playlist(self, playlist_id):
+        try:
+            return next(self.playlists(playlist_id=playlist_id))
+        except StopIteration:
+            pass
 
     def new_playlist(self, title, **kwargs):
         return YouTubePlaylist(service=self.service, title=title, **kwargs).insert()
