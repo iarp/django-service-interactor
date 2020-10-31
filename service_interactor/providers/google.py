@@ -225,7 +225,7 @@ class GoogleServiceProvider(ServiceProvider):
         ).execute()
 
 
-class YouTubeServiceProvider:
+class YouTubeServiceHelper:
 
     def __init__(self, service: GoogleServiceProvider):
 
