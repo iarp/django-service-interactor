@@ -269,7 +269,24 @@ class GmailMessage:
         return self.service.users().messages().trash(userId='me', id=self._message['id']).execute()
 
 
-class YouTubePlaylist:
+class BaseYoutubePlaylistClass:
+
+    def __getitem__(self, item):
+        return self.data[item]
+
+    def insert(self):
+        raise NotImplementedError
+
+    def update(self):
+        raise NotImplementedError
+
+    def save(self):
+        if self.id:
+            return self.update()
+        return self.insert()
+
+
+class YouTubePlaylist(BaseYoutubePlaylistClass):
 
     part = 'snippet,contentDetails,status'
 
@@ -284,9 +301,6 @@ class YouTubePlaylist:
 
     def __str__(self):
         return f'<Playlist: {self.title}>'
-
-    def __getitem__(self, item):
-        return self.data[item]
 
     @classmethod
     def load_from_response(cls, service, data):
@@ -327,11 +341,6 @@ class YouTubePlaylist:
         pi.save()
         return pi
 
-    def save(self):
-        if self.id:
-            return self.update()
-        return self.insert()
-
     def insert(self):
         body = {
             "snippet": {
@@ -366,7 +375,7 @@ class YouTubePlaylist:
         return self.service.playlists().delete(id=self.id).execute()
 
 
-class YouTubePlaylistItem:
+class YouTubePlaylistItem(BaseYoutubePlaylistClass):
 
     part = 'contentDetails,id,snippet,status'
 
@@ -386,9 +395,6 @@ class YouTubePlaylistItem:
     def __str__(self):
         return f'<PlaylistItem: {self.video_id} {self.title}>'
 
-    def __getitem__(self, item):
-        return self.data[item]
-
     @classmethod
     def load_from_response(cls, service, data):
         assert data['kind'] == 'youtube#playlistItem'
@@ -403,11 +409,6 @@ class YouTubePlaylistItem:
             playlist_item_id=data['id'],
             playlist_item_data=data
         )
-
-    def save(self):
-        if self.id:
-            return self.update()
-        return self.insert()
 
     def insert(self):
         # https://developers.google.com/youtube/v3/docs/playlistItems/insert
