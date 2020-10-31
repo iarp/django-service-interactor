@@ -269,7 +269,7 @@ class GmailMessage:
         return self.service.users().messages().trash(userId='me', id=self._message['id']).execute()
 
 
-class Playlist:
+class YouTubePlaylist:
 
     part = 'snippet,contentDetails,status'
 
@@ -312,13 +312,13 @@ class Playlist:
             page_token = data.get('nextPageToken')
 
             for item in data['items']:
-                yield PlaylistItem.load_from_response(self.service, item)
+                yield YouTubePlaylistItem.load_from_response(self.service, item)
 
             if not page_token:
                 break
 
     def new_video(self, video_id, **kwargs):
-        pi = PlaylistItem(
+        pi = YouTubePlaylistItem(
             service=self.service,
             video_id=video_id,
             playlist_id=self.id,
@@ -344,7 +344,7 @@ class Playlist:
             }
         }
         data = self.service.playlists().insert(part=self.part, body=body).execute()
-        return Playlist.load_from_response(self.service, data)
+        return YouTubePlaylist.load_from_response(self.service, data)
 
     def update(self):
         self.data = self.service.playlists().update(
@@ -366,7 +366,7 @@ class Playlist:
         return self.service.playlists().delete(id=self.id).execute()
 
 
-class PlaylistItem:
+class YouTubePlaylistItem:
 
     part = 'contentDetails,id,snippet,status'
 
@@ -424,7 +424,7 @@ class PlaylistItem:
                 }
             }
         ).execute()
-        return PlaylistItem.load_from_response(self.service, data)
+        return YouTubePlaylistItem.load_from_response(self.service, data)
 
     def update(self):
         # https://developers.google.com/youtube/v3/docs/playlistItems/update
@@ -476,7 +476,7 @@ class YouTubeHelper:
             vals['pageToken'] = data.get('nextPageToken')
 
             for item in data['items']:
-                playlist = Playlist.load_from_response(self.service, item)
+                playlist = YouTubePlaylist.load_from_response(self.service, item)
                 if playlist_id:
                     return playlist
                 yield playlist
@@ -485,7 +485,7 @@ class YouTubeHelper:
                 break
 
     def new_playlist(self, title, **kwargs):
-        return Playlist(service=self.service, title=title, **kwargs).insert()
+        return YouTubePlaylist(service=self.service, title=title, **kwargs).insert()
 
     def subscriptions(self, page_token=''):
         # https://developers.google.com/youtube/v3/docs/subscriptions/list
