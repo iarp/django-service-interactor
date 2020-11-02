@@ -14,21 +14,10 @@ from django.utils.functional import cached_property
 from googleapiclient import errors
 
 
-def _get_service_from_objs(service, _type):
-
-    for x in [f'{_type}_service', 'service']:
-        try:
-            return getattr(service, x)
-        except AttributeError:
-            pass
-
-    return service
-
-
 class GmailHelper:
 
     def __init__(self, service):
-        self.service = _get_service_from_objs(service, 'gmail')
+        self.service = service
 
     def messages(self, max_results=None, page_token=None, q=None, label_ids=None, include_spam_trash=None):
         vals = {
@@ -86,15 +75,11 @@ class GmailMessage:
         if isinstance(message_id, dict):
             message_id = message_id['id']
 
-        service = _get_service_from_objs(service, 'gmail')
-
         message = service.users().messages().get(userId='me', id=message_id).execute()
         return cls(service, message)
 
     @staticmethod
     def send_new_message(service, to, subject, body, attachments=None, body_type='plain', _from=None):
-        service = _get_service_from_objs(service, 'gmail')
-
         message = MIMEMultipart()
         message['to'] = to
         message['subject'] = subject
@@ -452,7 +437,7 @@ class YouTubePlaylistItem(BaseYoutubePlaylistClass):
 class YouTubeHelper:
 
     def __init__(self, service):
-        self.service = _get_service_from_objs(service, 'youtube')
+        self.service = service
 
     def playlists(self, playlist_id=None, max_results=25, page_token='', channel_id=None):
         # https://developers.google.com/youtube/v3/docs/playlists/list

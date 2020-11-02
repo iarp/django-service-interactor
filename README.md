@@ -18,3 +18,11 @@ settings.py::
         ...
     ]
 
+Usage
+=====
+
+    from allauth.socialaccount.models import SocialAccount
+    from service_interactor.providers.google import GoogleServiceProvider
+    
+    account = SocialAccount.objects.get(id=1, provider='google')
+    gsp = GoogleServiceProvider(account=account)

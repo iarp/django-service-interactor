@@ -226,7 +226,7 @@ class GoogleServiceProvider(ServiceProvider):
         ).execute()
 
     def get_gmail_helper(self):
-        return GmailHelper(self)
+        return GmailHelper(self.gmail_service)
 
     def get_youtube_helper(self):
-        return YouTubeHelper(self)
+        return YouTubeHelper(self.youtube_service)
