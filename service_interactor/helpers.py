@@ -54,32 +54,7 @@ class GmailHelper:
             'name': name
         }).execute()
 
-    def send_new_message(self, *args, **kwargs):
-        kwargs['service'] = self.service
-        return GmailMessage.send_new_message(*args, **kwargs)
-
-
-class GmailMessage:
-
-    def __init__(self, service, message):
-        self.service = service
-        self._message = message
-        self.id = message['id']
-        self.threadId = message['threadId']
-        self._attachments = []
-        self._body = None
-
-    @classmethod
-    def load(cls, service, message_id):
-
-        if isinstance(message_id, dict):
-            message_id = message_id['id']
-
-        message = service.users().messages().get(userId='me', id=message_id).execute()
-        return cls(service, message)
-
-    @staticmethod
-    def send_new_message(service, to, subject, body, attachments=None, body_type='plain', _from=None):
+    def send_message(self, to, subject, body, attachments=None, body_type='plain', _from=None, send=True):
         message = MIMEMultipart()
         message['to'] = to
         message['subject'] = subject
@@ -117,10 +92,34 @@ class GmailMessage:
                 msg.add_header('Content-Disposition', 'attachment', filename=os.path.basename(att))
                 message.attach(msg)
 
-        msg_as_str = message.as_bytes()
-        data = {'raw': base64.urlsafe_b64encode(msg_as_str).decode()}
-        output = service.users().messages().send(userId='me', body=data).execute()
-        return output
+        if send:
+            return self._send_message(message)
+        return message
+
+    def _send_message(self, message):
+        msg_as_bytes = message.as_bytes()
+        data = {'raw': base64.urlsafe_b64encode(msg_as_bytes).decode()}
+        return self.service.users().messages().send(userId='me', body=data).execute()
+
+
+class GmailMessage:
+
+    def __init__(self, service, message):
+        self.service = service
+        self._message = message
+        self.id = message['id']
+        self.threadId = message['threadId']
+        self._attachments = []
+        self._body = None
+
+    @classmethod
+    def load(cls, service, message_id):
+
+        if isinstance(message_id, dict):
+            message_id = message_id['id']
+
+        message = service.users().messages().get(userId='me', id=message_id).execute()
+        return cls(service, message)
 
     def get_raw_message(self):
         message = self.service.users().messages().get(userId='me', id=self.id, format='raw').execute()
