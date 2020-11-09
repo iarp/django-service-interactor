@@ -40,7 +40,7 @@ class GmailHelper:
 
             vals['pageToken'] = data.get('nextPageToken')
 
-            for item in data['messages']:
+            for item in data.get('messages', []):
                 yield GmailMessage.load(self.service, item['id'])
 
             if not vals['pageToken']:
