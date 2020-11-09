@@ -47,7 +47,7 @@ class GmailHelper:
                 break
 
     def labels(self):
-        return self.service.users().labels().list(userId='me').execute()
+        return self.service.users().labels().list(userId='me').execute().get('labels', [])
 
     def create_label(self, name):
         return self.service.users().labels().create(userId='me', body={
@@ -298,13 +298,14 @@ class YouTubePlaylist(BaseYoutubePlaylistClass):
             playlist_data=data
         )
 
-    def videos(self, page_token=''):
+    def videos(self, page_token='', max_results=25):
         while True:
 
             data = self.service.playlistItems().list(
                 part='snippet,contentDetails,status',
                 playlistId=self.id,
                 pageToken=page_token,
+                maxResults=max_results,
             ).execute()
 
             page_token = data.get('nextPageToken')
