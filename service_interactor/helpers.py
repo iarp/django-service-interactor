@@ -112,6 +112,9 @@ class GmailMessage:
         self._attachments = []
         self._body = None
 
+    def __str__(self):
+        return self.subject
+
     @classmethod
     def load(cls, service, message_id):
 

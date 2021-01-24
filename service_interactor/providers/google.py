@@ -22,8 +22,8 @@ class GoogleServiceProvider(ServiceProvider):
     requires_token_secret = True
     token_uri = 'https://accounts.google.com/o/oauth2/token'
 
-    def resource(self, service_name, version='v3'):
-        return build(service_name, version, credentials=self.credentials)
+    def resource(self, service_name, version='v3', cache_discovery=False):
+        return build(service_name, version, credentials=self.credentials, cache_discovery=cache_discovery)
 
     @cached_property
     def calendar_service(self):
