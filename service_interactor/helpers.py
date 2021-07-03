@@ -326,8 +326,7 @@ class YouTubePlaylist(BaseYoutubePlaylistClass):
             playlist_id=self.id,
             **kwargs
         )
-        pi.save()
-        return pi
+        return pi.save()
 
     def insert(self):
         body = {
