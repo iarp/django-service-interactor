@@ -61,6 +61,12 @@ def copy_default_scopes(request, sociallogin, **kwargs):
 
     for scope in scopes_received:
 
+        if sociallogin.account.provider == 'google':
+            if scope == 'email':
+                scope = 'https://www.googleapis.com/auth/userinfo.email'
+            elif scope == 'profile':
+                scope = 'https://www.googleapis.com/auth/userinfo.profile'
+
         scope, _ = Scope.objects.get_or_create(provider=sociallogin.account.provider, name=scope)
 
         ups, created = UserProviderScope.objects.get_or_create(account=sociallogin.account, scope=scope)
